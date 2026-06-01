@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'postos_controller.dart';
 import 'posto_card.dart';
+import '../vistoria/vistoria_screen.dart';
 
 class PostosListScreen extends StatelessWidget {
   const PostosListScreen({super.key});
@@ -60,7 +61,12 @@ class PostosListScreen extends StatelessWidget {
                 child: ListView.builder(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   itemCount: controller.postos.length,
-                  itemBuilder: (_, i) => PostoCard(posto: controller.postos[i]),
+                  itemBuilder: (_, i) => PostoCard(
+                    posto: controller.postos[i],
+                    onTap: () => Get.to(
+                      () => VistoriaScreen(posto: controller.postos[i]),
+                    ),
+                  ),
                 ),
               );
             }),

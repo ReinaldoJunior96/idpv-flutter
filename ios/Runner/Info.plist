@@ -47,6 +47,12 @@
 			</array>
 		</dict>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Necessário para fotografar itens durante a vistoria.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Necessário para selecionar fotos da galeria durante a vistoria.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Necessário para salvar fotos da vistoria.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
