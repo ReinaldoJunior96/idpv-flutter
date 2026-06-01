@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:get/get.dart';
+import '../data/checklist_items.dart';
 import '../data/vistoria_model.dart';
 import '../data/vistoria_storage.dart';
 import 'vistoria_api.dart';
@@ -112,8 +113,9 @@ class SyncService extends GetxService {
     for (final item in vistoria.resultados) {
       if (item.photoBase64 != null && item.fotoUrl == null) {
         try {
+          final nome = kChecklist.firstWhere((c) => c.id == item.itemId).nome;
           final bytes = base64Decode(item.photoBase64!);
-          final url = await _api.uploadFoto(vistoria.id, item.itemId, bytes);
+          final url = await _api.uploadFoto(vistoria.id, nome, bytes);
           resultado.add(item.copyWith(fotoUrl: url));
         } catch (_) {
           resultado.add(item);
