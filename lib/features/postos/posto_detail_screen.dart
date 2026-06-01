@@ -12,7 +12,7 @@ class PostoDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(PostoDetailController(posto: posto));
+    final controller = Get.put(PostoDetailController(posto: posto), tag: posto.id);
 
     return Scaffold(
       appBar: AppBar(

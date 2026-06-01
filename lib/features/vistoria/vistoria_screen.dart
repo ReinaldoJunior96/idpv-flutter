@@ -12,7 +12,7 @@ class VistoriaScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(VistoriaController(posto: posto));
+    final controller = Get.put(VistoriaController(posto: posto), tag: posto.id);
 
     return Scaffold(
       appBar: AppBar(

@@ -66,6 +66,7 @@ class SyncService extends GetxService {
     try {
       for (final vistoria in pending) {
         await _syncOne(vistoria);
+        await _updateCounts(); // atualiza badge após cada vistoria, não só no final
       }
     } finally {
       isSyncing.value = false;
