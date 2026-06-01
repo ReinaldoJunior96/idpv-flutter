@@ -3,9 +3,9 @@ import 'package:get/get.dart';
 import '../../core/widgets/connectivity_banner.dart';
 import 'postos_controller.dart';
 import 'posto_card.dart';
-import '../vistoria/vistoria_screen.dart';
 import '../vistoria/sync/sync_service.dart';
 import '../sync/sync_status_screen.dart';
+import 'posto_detail_screen.dart';
 
 class PostosListScreen extends StatelessWidget {
   const PostosListScreen({super.key});
@@ -125,7 +125,7 @@ class PostosListScreen extends StatelessWidget {
                   itemBuilder: (_, i) => PostoCard(
                     posto: controller.postos[i],
                     onTap: () => Get.to(
-                      () => VistoriaScreen(posto: controller.postos[i]),
+                      () => PostoDetailScreen(posto: controller.postos[i]),
                     ),
                   ),
                 ),
