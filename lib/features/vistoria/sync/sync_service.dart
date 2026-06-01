@@ -11,7 +11,9 @@ class SyncService extends GetxService {
   final _api = VistoriaApi();
 
   final isSyncing = false.obs;
+  final isOnline = true.obs;
   final pendingCount = 0.obs;
+  final failedCount = 0.obs;
 
   StreamSubscription? _connectivitySub;
 
@@ -20,10 +22,10 @@ class SyncService extends GetxService {
     super.onInit();
     _resetStuckSyncing();
     _listenConnectivity();
+    _updateCounts();
     syncPending();
   }
 
-  /// Reseta vistorias que ficaram em 'syncing' por crash do app.
   Future<void> _resetStuckSyncing() async {
     final all = await _storage.loadAll();
     for (final v in all.where((v) => v.syncStatus == SyncStatus.syncing)) {
@@ -32,17 +34,30 @@ class SyncService extends GetxService {
   }
 
   void _listenConnectivity() {
+    // Estado inicial
+    Connectivity().checkConnectivity().then((results) {
+      isOnline.value = !results.contains(ConnectivityResult.none);
+    });
+
     _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
       final online = !results.contains(ConnectivityResult.none);
+      isOnline.value = online;
       if (online) syncPending();
     });
+  }
+
+  Future<void> _updateCounts() async {
+    final all = await _storage.loadAll();
+    pendingCount.value =
+        all.where((v) => v.syncStatus == SyncStatus.pending).length;
+    failedCount.value =
+        all.where((v) => v.syncStatus == SyncStatus.failed).length;
   }
 
   Future<void> syncPending() async {
     if (isSyncing.value) return;
 
     final pending = await _storage.loadPending();
-    pendingCount.value = pending.length;
     if (pending.isEmpty) return;
 
     isSyncing.value = true;
@@ -52,29 +67,35 @@ class SyncService extends GetxService {
       }
     } finally {
       isSyncing.value = false;
-      final remaining = await _storage.loadPending();
-      pendingCount.value = remaining.length;
+      await _updateCounts();
     }
+  }
+
+  /// Recoloca todas as vistorias com falha na fila e tenta sincronizar.
+  Future<void> retryFailed() async {
+    final all = await _storage.loadAll();
+    for (final v in all.where((v) => v.syncStatus == SyncStatus.failed)) {
+      await _storage.updateStatus(v.id, SyncStatus.pending);
+    }
+    await _updateCounts();
+    await syncPending();
   }
 
   Future<void> _syncOne(Vistoria vistoria) async {
     try {
       await _storage.updateStatus(vistoria.id, SyncStatus.syncing);
 
-      // 1. Upload fotos e coleta URLs
       final resultadosAtualizados = await _uploadFotos(vistoria);
-
-      // 2. Salva URLs localmente antes de postar (garante que não perdemos as URLs)
       await _storage.updateResultados(vistoria.id, resultadosAtualizados);
 
-      // 3. Envia vistoria com URLs para o servidor
-      final vistoriaComUrls = vistoria.copyWith(resultados: resultadosAtualizados);
+      final vistoriaComUrls =
+          vistoria.copyWith(resultados: resultadosAtualizados);
       await _api.postVistoria(vistoriaComUrls);
 
       await _storage.updateStatus(vistoria.id, SyncStatus.synced);
     } catch (_) {
-      // Volta para pending — será retentado na próxima conexão
-      await _storage.updateStatus(vistoria.id, SyncStatus.pending);
+      // Marca como falhou — requer ação do usuário ou nova tentativa manual
+      await _storage.updateStatus(vistoria.id, SyncStatus.failed);
     }
   }
 
@@ -84,10 +105,11 @@ class SyncService extends GetxService {
       if (item.photoBase64 != null && item.fotoUrl == null) {
         try {
           final bytes = base64Decode(item.photoBase64!);
-          final url = await _api.uploadFoto(vistoria.id, item.itemId, bytes);
+          final url =
+              await _api.uploadFoto(vistoria.id, item.itemId, bytes);
           resultado.add(item.copyWith(fotoUrl: url));
         } catch (_) {
-          resultado.add(item); // continua sem a foto se o upload falhar
+          resultado.add(item);
         }
       } else {
         resultado.add(item);
