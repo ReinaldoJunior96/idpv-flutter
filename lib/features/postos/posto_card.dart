@@ -24,15 +24,17 @@ class PostoCard extends StatelessWidget {
           ),
         ),
         title: Text(
-          posto.nomeFantasia,
+          posto.nome,
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 2),
-            Text('${posto.municipio} · ${posto.uf}',
-                style: const TextStyle(fontSize: 13)),
+            Text(
+              '${posto.cidade} · ${posto.estado}',
+              style: const TextStyle(fontSize: 13),
+            ),
             const SizedBox(height: 6),
             Row(
               children: [
@@ -41,10 +43,10 @@ class PostoCard extends StatelessWidget {
                   color: _bandeiraCor(posto.bandeira),
                 ),
                 const SizedBox(width: 6),
-                _Chip(
-                  label: _statusLabel(posto.status),
-                  color: _statusCor(posto.status),
-                ),
+                if (posto.jaAuditado)
+                  const _Chip(label: 'Auditado', color: Colors.green)
+                else
+                  const _Chip(label: 'Pendente', color: Colors.orange),
               ],
             ),
           ],
@@ -64,37 +66,13 @@ class PostoCard extends StatelessWidget {
         return const Color(0xFFDD1E2F);
       case 'petrobras':
         return const Color(0xFF009B3A);
+      case 'ale':
+        return const Color(0xFF003087);
       case 'raízen':
       case 'raizen':
         return const Color(0xFF0066CC);
       default:
         return const Color(0xFF607D8B);
-    }
-  }
-
-  String _statusLabel(String status) {
-    switch (status) {
-      case 'EM_IMPLANTACAO':
-        return 'Em Implantação';
-      case 'ATIVO':
-        return 'Ativo';
-      case 'INATIVO':
-        return 'Inativo';
-      default:
-        return status;
-    }
-  }
-
-  Color _statusCor(String status) {
-    switch (status) {
-      case 'EM_IMPLANTACAO':
-        return Colors.orange;
-      case 'ATIVO':
-        return Colors.green;
-      case 'INATIVO':
-        return Colors.red;
-      default:
-        return Colors.grey;
     }
   }
 }

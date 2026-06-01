@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart' show TextEditingController;
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
@@ -7,6 +8,7 @@ import '../postos/data/posto_model.dart';
 import 'data/checklist_items.dart';
 import 'data/vistoria_model.dart';
 import 'data/vistoria_storage.dart';
+import 'sync/sync_service.dart';
 
 class VistoriaController extends GetxController {
   final Posto posto;
@@ -16,20 +18,18 @@ class VistoriaController extends GetxController {
   VistoriaController({required this.posto});
 
   final statuses = <String, ItemStatus>{}.obs;
-  // bytes para exibir a foto na UI (funciona em web e native)
   final photoBytes = <String, Uint8List>{}.obs;
-  // path para salvar no modelo (somente native)
-  final _photoPaths = <String, String>{};
   final isSaving = false.obs;
 
+  late final String _startedAt;
   late final Map<String, TextEditingController> textControllers;
 
   @override
   void onInit() {
     super.onInit();
+    _startedAt = DateTime.now().toUtc().toIso8601String();
     textControllers = {
-      for (final item in kChecklist)
-        item.id: TextEditingController(),
+      for (final item in kChecklist) item.id: TextEditingController(),
     };
   }
 
@@ -51,10 +51,8 @@ class VistoriaController extends GetxController {
       imageQuality: 70,
     );
     if (xfile == null) return;
-
     final bytes = await xfile.readAsBytes();
     photoBytes[itemId] = bytes;
-    if (!kIsWeb) _photoPaths[itemId] = xfile.path;
   }
 
   int get answeredCount => statuses.length;
@@ -72,27 +70,38 @@ class VistoriaController extends GetxController {
 
     isSaving.value = true;
     try {
+      final finishedAt = DateTime.now().toUtc().toIso8601String();
+
       final vistoria = Vistoria(
         id: const Uuid().v4(),
         postoId: posto.id,
-        postoNomeFantasia: posto.nomeFantasia,
+        postoNome: posto.nome,
         dataHora: DateTime.now(),
+        startedAt: _startedAt,
+        finishedAt: finishedAt,
+        syncStatus: SyncStatus.pending,
         resultados: kChecklist.map((item) {
           final obs = textControllers[item.id]!.text.trim();
+          final bytes = photoBytes[item.id];
           return ItemResult(
             itemId: item.id,
             status: statuses[item.id]!,
             observacao: obs.isEmpty ? null : obs,
-            photoPath: _photoPaths[item.id],
+            photoBase64: bytes != null ? base64Encode(bytes) : null,
           );
         }).toList(),
       );
 
+      // Salva localmente — não pode ser perdido
       await _storage.save(vistoria);
+
+      // Dispara sync imediatamente (sem await — não bloqueia o promotor)
+      Get.find<SyncService>().syncPending();
+
       Get.back();
       Get.snackbar(
         'Vistoria salva',
-        posto.nomeFantasia,
+        posto.nome,
         snackPosition: SnackPosition.BOTTOM,
       );
     } catch (_) {

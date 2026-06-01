@@ -9,9 +9,9 @@ class PostosApi {
     final response = await _client.get('/postos');
 
     if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      final rows = data['rows'] as List<dynamic>;
-      return rows
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      final data = body['data'] as List<dynamic>;
+      return data
           .map((e) => Posto.fromJson(e as Map<String, dynamic>))
           .toList();
     }

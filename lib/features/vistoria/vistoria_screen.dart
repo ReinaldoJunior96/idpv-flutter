@@ -20,11 +20,11 @@ class VistoriaScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              posto.nomeFantasia,
+              posto.nome,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             Text(
-              '${posto.municipio} · ${posto.uf}',
+              '${posto.cidade} · ${posto.estado}',
               style: TextStyle(
                 fontSize: 12,
                 color: Theme.of(context)
