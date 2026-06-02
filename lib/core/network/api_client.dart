@@ -2,10 +2,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiClient {
-  static const String baseUrl =
-      'https://ahyrldewfotctzmjzkdy.supabase.co/functions/v1';
-  static const String apiKey =
-      'ipdv_cand_6a1a8ec901ea30f433269e42d0f487071b84dbeb40b9148d';
+  static const String baseUrl = String.fromEnvironment('API_URL');
+  static const String apiKey = String.fromEnvironment('API_KEY');
   static const Duration timeout = Duration(seconds: 15);
 
   static const Map<String, String> jsonHeaders = {

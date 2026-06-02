@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart' show TextEditingController;
 import 'package:flutter/foundation.dart';
+import '../../core/platform/photo_storage.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
@@ -70,26 +71,39 @@ class VistoriaController extends GetxController {
 
     isSaving.value = true;
     try {
+      final vistoriaId = const Uuid().v4();
       final finishedAt = DateTime.now().toUtc().toIso8601String();
 
       final vistoria = Vistoria(
-        id: const Uuid().v4(),
+        id: vistoriaId,
         postoId: posto.id,
         postoNome: posto.nome,
         dataHora: DateTime.now(),
         startedAt: _startedAt,
         finishedAt: finishedAt,
         syncStatus: SyncStatus.pending,
-        resultados: kChecklist.map((item) {
+        resultados: await Future.wait(kChecklist.map((item) async {
           final obs = textControllers[item.id]!.text.trim();
           final bytes = photoBytes[item.id];
+
+          String? photoPath;
+          String? photoBase64;
+
+          if (bytes != null) {
+            // Native: salva em arquivo e guarda só o caminho
+            // Web: savePhotoLocally retorna null, cai no base64
+            photoPath = await savePhotoLocally('${vistoriaId}_${item.id}', bytes);
+            if (photoPath == null) photoBase64 = base64Encode(bytes);
+          }
+
           return ItemResult(
             itemId: item.id,
             status: statuses[item.id]!,
             observacao: obs.isEmpty ? null : obs,
-            photoBase64: bytes != null ? base64Encode(bytes) : null,
+            photoPath: photoPath,
+            photoBase64: photoBase64,
           );
-        }).toList(),
+        })),
       );
 
       // Salva localmente — não pode ser perdido

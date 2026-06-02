@@ -31,21 +31,26 @@ class ItemResult {
   final String itemId;
   final ItemStatus status;
   final String? observacao;
-  final String? photoBase64; // bytes em base64 para persistência offline
+  final String? photoPath;   // caminho no filesystem (native)
+  final String? photoBase64; // fallback base64 (web)
   final String? fotoUrl;     // URL após upload bem-sucedido
 
   const ItemResult({
     required this.itemId,
     required this.status,
     this.observacao,
+    this.photoPath,
     this.photoBase64,
     this.fotoUrl,
   });
+
+  bool get temFoto => photoPath != null || photoBase64 != null;
 
   ItemResult copyWith({String? fotoUrl}) => ItemResult(
         itemId: itemId,
         status: status,
         observacao: observacao,
+        photoPath: photoPath,
         photoBase64: photoBase64,
         fotoUrl: fotoUrl ?? this.fotoUrl,
       );
@@ -54,6 +59,7 @@ class ItemResult {
         'itemId': itemId,
         'status': status.name,
         'observacao': observacao,
+        'photoPath': photoPath,
         'photoBase64': photoBase64,
         'fotoUrl': fotoUrl,
       };
@@ -62,6 +68,7 @@ class ItemResult {
         itemId: json['itemId'] as String,
         status: ItemStatus.values.byName(json['status'] as String),
         observacao: json['observacao'] as String?,
+        photoPath: json['photoPath'] as String?,
         photoBase64: json['photoBase64'] as String?,
         fotoUrl: json['fotoUrl'] as String?,
       );

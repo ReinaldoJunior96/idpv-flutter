@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:get/get.dart';
+import '../../../core/platform/photo_storage.dart';
 import '../data/checklist_items.dart';
 import '../data/vistoria_model.dart';
 import '../data/vistoria_storage.dart';
@@ -111,12 +113,24 @@ class SyncService extends GetxService {
   Future<List<ItemResult>> _uploadFotos(Vistoria vistoria) async {
     final resultado = <ItemResult>[];
     for (final item in vistoria.resultados) {
-      if (item.photoBase64 != null && item.fotoUrl == null) {
+      if (item.temFoto && item.fotoUrl == null) {
         try {
-          final nome = kChecklist.firstWhere((c) => c.id == item.itemId).nome;
-          final bytes = base64Decode(item.photoBase64!);
-          final url = await _api.uploadFoto(vistoria.id, nome, bytes);
-          resultado.add(item.copyWith(fotoUrl: url));
+          // Native: lê do arquivo. Web: decodifica base64.
+          Uint8List? bytes;
+          if (item.photoPath != null) {
+            bytes = await readPhotoLocally(item.photoPath!);
+          }
+          bytes ??= item.photoBase64 != null
+              ? base64Decode(item.photoBase64!)
+              : null;
+
+          if (bytes != null) {
+            final nome = kChecklist.firstWhere((c) => c.id == item.itemId).nome;
+            final url = await _api.uploadFoto(vistoria.id, nome, bytes);
+            resultado.add(item.copyWith(fotoUrl: url));
+          } else {
+            resultado.add(item);
+          }
         } catch (_) {
           resultado.add(item);
         }
